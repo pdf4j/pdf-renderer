@@ -42,6 +42,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+
+
+
+
+import com.sun.pdfview.colorspace.AlternateColorSpace;
 import com.sun.pdfview.colorspace.IndexedColor;
 import com.sun.pdfview.colorspace.PDFColorSpace;
 import com.sun.pdfview.function.FunctionType0;
@@ -98,8 +103,10 @@ public class PDFImage {
      *
      * @param obj the PDFObject containing the image's dictionary and stream
      * @param resources the current resources
+     * @param useAsSMask - flag for switching colors in case image is used as sMask internally
+     *                     this is needed for handling transparency in smask images.    
      */
-    public static PDFImage createImage(PDFObject obj, Map resources)
+    public static PDFImage createImage(PDFObject obj, Map resources, boolean useAsSMask)
             throws IOException {
         // create the image
         PDFImage image = new PDFImage(obj);
@@ -123,24 +130,30 @@ public class PDFImage {
         if (imageMaskObj != null) {
             image.setImageMask(imageMaskObj.getBooleanValue());
         }
-
         // read the bpc and colorspace (required except for masks) 
         if (image.isImageMask()) {
             image.setBitsPerComponent(1);
-
             // create the indexed color space for the mask
             // [PATCHED by michal.busta@gmail.com] - default value od Decode according to PDF spec. is [0, 1]
-        	// so the color arry should be:  
-            Color[] colors = {Color.BLACK, Color.WHITE};
-            
+            // so the color arry should be:            
+            // [PATCHED by XOND] - switched colors in case the image is used as SMask for another image, otherwise transparency isn't 
+            //                     handled correctly.
+            Color[] colors = useAsSMask? new Color[]{Color.WHITE, Color.BLACK}:new Color[]{Color.BLACK, Color.WHITE};
             PDFObject imageMaskDecode = obj.getDictRef("Decode");
             if (imageMaskDecode != null) {
-                PDFObject[] array = imageMaskDecode.getArray();
-                float decode0 = array[0].getFloatValue();
+                PDFObject[] decodeArray = imageMaskDecode.getArray();
+                float decode0 = decodeArray[0].getFloatValue();
                 if (decode0 == 1.0f) {
-                    colors = new Color[]{Color.WHITE, Color.BLACK};
+                    colors = useAsSMask? new Color[]{Color.BLACK, Color.WHITE}:new Color[]{Color.WHITE, Color.BLACK};
                 }
+                
+/*                float[] decode = new float[decodeArray.length];
+                for (int i = 0; i < decodeArray.length; i++) {
+                    decode[i] = decodeArray[i].getFloatValue();
+                }
+                image.setDecode(decode);*/
             }
+            
             image.setColorSpace(new IndexedColor(colors));
         } else {
             // get the bits per component (required)
@@ -158,25 +171,23 @@ public class PDFImage {
 
             PDFColorSpace cs = PDFColorSpace.getColorSpace(csObj, resources);
             image.setColorSpace(cs);
-        }
 
-        // read the decode array
-        PDFObject decodeObj = obj.getDictRef("Decode");
-        if (decodeObj != null) {
-            PDFObject[] decodeArray = decodeObj.getArray();
+            // read the decode array
+            PDFObject decodeObj = obj.getDictRef("Decode");
+            if (decodeObj != null) {
+                PDFObject[] decodeArray = decodeObj.getArray();
 
-            float[] decode = new float[decodeArray.length];
-            for (int i = 0; i < decodeArray.length; i++) {
-                decode[i] = decodeArray[i].getFloatValue();
+                float[] decode = new float[decodeArray.length];
+                for (int i = 0; i < decodeArray.length; i++) {
+                    decode[i] = decodeArray[i].getFloatValue();
+                }
+
+                image.setDecode(decode);
             }
-
-            image.setDecode(decode);
-        }
-
-        // read the soft mask.
-        // If ImageMask is true, this entry must not be present.
-        // (See implementation note 52 in Appendix H.)
-        if (imageMaskObj == null) {
+            
+            // read the soft mask.
+            // If ImageMask is true, this entry must not be present.
+            // (See implementation note 52 in Appendix H.)
             PDFObject sMaskObj = obj.getDictRef("SMask");
             if (sMaskObj == null) {
                 // try the explicit mask, if there is no SoftMask
@@ -186,7 +197,7 @@ public class PDFImage {
             if (sMaskObj != null) {
                 if (sMaskObj.getType() == PDFObject.STREAM) {
                     try {
-                        PDFImage sMaskImage = PDFImage.createImage(sMaskObj, resources);
+                        PDFImage sMaskImage = PDFImage.createImage(sMaskObj, resources, true);
                         image.setSMask(sMaskImage);
                     } catch (IOException ex) {
                         p("ERROR: there was a problem parsing the mask for this object");
@@ -225,7 +236,7 @@ public class PDFImage {
                 imageObj.setCache(bi);
             }
 //            if(bi != null)
-//            	ImageIO.write(bi, "png", new File("/tmp/test/" + System.identityHashCode(this) + ".png"));
+//              ImageIO.write(bi, "png", new File("/tmp/test/" + System.identityHashCode(this) + ".png"));
             return bi;
         } catch (IOException ioe) {
             System.out.println("Error reading image");
@@ -354,6 +365,64 @@ public class PDFImage {
         }
 
         return (bi);
+    }
+
+    /**
+     * Creates a new image of type {@link TYPE_BYTE_GRAY} which represents
+     * the given raster
+     * @param raster Raster of an image with just two colors, bitwise encoded 
+     * @param ncc Array with two entries that describe the corresponding 
+     *              gray values
+     */
+    private BufferedImage biColorToGrayscale(final WritableRaster raster,
+            final byte[] ncc) {
+        
+        final byte[] bufferO = ((DataBufferByte) raster.getDataBuffer()).getData();
+        
+        BufferedImage converted = new BufferedImage(getWidth(),
+                getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+        
+        byte[] buffer = ((DataBufferByte) converted.getRaster().getDataBuffer()).getData();         
+
+        int i = 0;
+        final int height = converted.getHeight();
+        final int width = converted.getWidth();
+        for (int y = 0; y < height; y++) {
+            int base = y*width + 7;
+            if (width % 8 == 0 && (y+1)*width < buffer.length) {
+                for (int x = 0; x < width; x += 8) {
+                    final byte bits = bufferO[i];
+                    i++;
+                    buffer[base - 7] = ncc[((bits >>> 7) & 1)];
+                    buffer[base - 6] = ncc[((bits >>> 6) & 1)];
+                    buffer[base - 5] = ncc[((bits >>> 5) & 1)];
+                    buffer[base - 4] = ncc[((bits >>> 4) & 1)];
+                    buffer[base - 3] = ncc[((bits >>> 3) & 1)];
+                    buffer[base - 2] = ncc[((bits >>> 2) & 1)];
+                    buffer[base - 1] = ncc[((bits >>> 1) & 1)];
+                    buffer[base] = ncc[(bits & 1)];
+                    
+                    /*for (byte j=7; j>=0; j--) {
+                        //final int c = (((bits & (1<<j)) >>> j));
+                        final int c = ((bits >>> j) & 1);
+                        buffer[base - j] = ncc[c];
+                    }*/
+                    base += 8;
+                }                   
+            }
+            else {
+                for (int x = 0; x < width; x += 8) {
+                    final byte bits = bufferO[i];
+                    i++;
+                    for (byte j=7; j>=0; j--) {
+                        if (base - j >= buffer.length) break;
+                        buffer[base - j] = ncc[((bits >>> j) & 1)];
+                    }
+                    base += 8;          
+                }
+            }
+        }
+        return converted;
     }
 
     /**
@@ -535,7 +604,25 @@ public class PDFImage {
                 return new IndexColorModel(getBitsPerComponent(), num, aComps,
                         0, true);
             }
+        } else if (cs instanceof AlternateColorSpace){
+            //ColorSpace altCS = new AltColorSpace(((AlternateColorSpace) cs).getFunktion(), cs.getColorSpace());
+            ColorSpace altCS = cs.getColorSpace();
+            int[] bits = new int[altCS.getNumComponents()];
+            for (int i = 0; i <
+                    bits.length; i++) {
+                bits[i] = getBitsPerComponent();
+            }
+            return new DecodeComponentColorModel(altCS, bits);
         } else {
+            // CMYK color space has been converted to RGB in DCTDecode
+            if (cs.getColorSpace().getType() == ColorSpace.TYPE_CMYK) {
+                ColorSpace rgbCS = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+                int[] bits = new int[rgbCS.getNumComponents()];
+                for (int i = 0; i < bits.length; i++) {
+                    bits[i] = getBitsPerComponent();
+                }
+                return new DecodeComponentColorModel(rgbCS, bits);
+            }
             int[] bits = new int[cs.getNumComponents()];
             for (int i = 0; i < bits.length; i++) {
                 bits[i] = getBitsPerComponent();

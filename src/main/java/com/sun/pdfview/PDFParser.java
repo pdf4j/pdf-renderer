@@ -940,7 +940,7 @@ public class PDFParser extends BaseWatchable {
      * the width, height and color space of the image.
      */
     private void doImage(PDFObject obj) throws IOException {
-        cmds.addImage(PDFImage.createImage(obj, resources));
+        cmds.addImage(PDFImage.createImage(obj, resources, false));
     }
 
     /**

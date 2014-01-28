@@ -11,6 +11,16 @@
             <artifactId>junit</artifactId>
             <version>4.6</version>
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>de.intarsys.opensource</groupId>
+            <artifactId>jbig2</artifactId>
+            <version>5.3</version>
+        </dependency>
     </dependencies>
     <name>PDF renderer, Atlassian patched</name>
     <licenses>
@@ -32,11 +42,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                    <excludes>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <!--excludes>
                         <exclude>**/test/**/*.java</exclude>
-                    </excludes>
+                    </excludes-->
                 </configuration>
             </plugin>
             <plugin>

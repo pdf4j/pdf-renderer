@@ -48,33 +48,25 @@ import com.sun.pdfview.decrypt.IdentityDecrypter;
  * @author Mike Wessler
  */
 public class PDFObject {
+
     /** an indirect reference*/
-    public static final int INDIRECT=0;      // PDFXref
-
+    public static final int INDIRECT = 0;      // PDFXref
     /** a Boolean */
-    public static final int BOOLEAN= 1;      // Boolean
-
+    public static final int BOOLEAN = 1;      // Boolean
     /** a Number, represented as a double */
-    public static final int NUMBER= 2;       // Double
-    
+    public static final int NUMBER = 2;       // Double
     /** a String */
-    public static final int STRING= 3;       // String
-
+    public static final int STRING = 3;       // String
     /** a special string, seen in PDF files as /Name */
-    public static final int NAME= 4;         // String
-
+    public static final int NAME = 4;         // String
     /** an array of PDFObjects */
-    public static final int ARRAY= 5;        // Array of PDFObject
-
+    public static final int ARRAY = 5;        // Array of PDFObject
     /** a Hashmap that maps String names to PDFObjects */
-    public static final int DICTIONARY= 6;   // HashMap(String->PDFObject)
-
+    public static final int DICTIONARY = 6;   // HashMap(String->PDFObject)
     /** a Stream: a Hashmap with a byte array */
-    public static final int STREAM=7;        // HashMap + byte[]
-
+    public static final int STREAM = 7;        // HashMap + byte[]
     /** the NULL object (there is only one) */
-    public static final int NULL= 8;         // null
-
+    public static final int NULL = 8;         // null
     /** a special PDF bare word, like R, obj, true, false, etc */
     public static final int KEYWORD = 9;      // String
     /**
@@ -90,27 +82,22 @@ public class PDFObject {
      * in the trailer.
      */
     public static final int OBJ_NUM_TRAILER = -1;
-    /** the NULL PDFObject */
-    public static final PDFObject nullObj= new PDFObject(null, NULL, null);
 
+    /** the NULL PDFObject */
+    public static final PDFObject nullObj = new PDFObject(null, NULL, null);
     /** the type of this object */
     private int type;
-
-    /** the value of this object */
+    /** the value of this object. It can be a wide number of things, defined by type */
     private Object value;
-    
     /** the encoded stream, if this is a STREAM object */
     private ByteBuffer stream;
-
     /** a cached version of the decoded stream */
     private SoftReference decodedStream;
-    
     /**
      * the PDFFile from which this object came, used for
      * dereferences
      */
     private PDFFile owner;
-
     /**
      * a cache of translated data.  This data can be
      * garbage collected at any time, after which it will
@@ -135,18 +122,18 @@ public class PDFObject {
      * everything else, it's a String.
      */
     public PDFObject(PDFFile owner, int type, Object value) {
-	this.type= type;
-	if (type==NAME) {
-	    value= ((String)value).intern();
-	} else if (type==KEYWORD && value.equals("true")) {
-	    this.type= BOOLEAN;
-	    value= Boolean.TRUE;
-	} else if (type==KEYWORD && value.equals("false")) {
-	    this.type= BOOLEAN;
-	    value= Boolean.FALSE;
-	}
-	this.value= value;
-	this.owner= owner;
+        this.type = type;
+        if (type == NAME) {
+            value = ((String) value).intern();
+        } else if (type == KEYWORD && value.equals("true")) {
+            this.type = BOOLEAN;
+            value = Boolean.TRUE;
+        } else if (type == KEYWORD && value.equals("false")) {
+            this.type = BOOLEAN;
+            value = Boolean.FALSE;
+        }
+        this.value = value;
+        this.owner = owner;
     }
 
     /**
@@ -160,41 +147,41 @@ public class PDFObject {
      * above examples, and can't be turned into a PDFObject.
      */
     public PDFObject(Object obj) throws PDFParseException {
-	this.owner= null;
-	this.value= obj;
-	if ((obj instanceof Double) || (obj instanceof Integer)) {
-	    this.type= NUMBER;
-	} else if (obj instanceof String) {
-	    this.type= NAME;
-	} else if (obj instanceof PDFObject[]) {
-	    this.type= ARRAY;
-	} else if (obj instanceof Object[]) {
-	    Object[] srcary= (Object[])obj;
-	    PDFObject[] dstary= new PDFObject[srcary.length];
-	    for (int i=0; i<srcary.length; i++) {
-		dstary[i]= new PDFObject(srcary[i]);
-	    }
-	    value= dstary;
-	    this.type= ARRAY;
-	} else if (obj instanceof HashMap) {
-	    this.type= DICTIONARY;
-	} else if (obj instanceof Boolean) {
-	    this.type= BOOLEAN;
-	} else if (obj instanceof PDFParser.Tok) {
-	    PDFParser.Tok tok= (PDFParser.Tok)obj;
-	    if (tok.name.equals("true")) {
-		this.value= Boolean.TRUE;
-		this.type= BOOLEAN;
-	    } else if (tok.name.equals("false")) {
-		this.value= Boolean.FALSE;
-		this.type= BOOLEAN;
-	    } else {
-		this.value= tok.name;
-		this.type= NAME;
-		}
-	} else {
-	    throw new PDFParseException("Bad type for raw PDFObject: "+obj);
-	}
+        this.owner = null;
+        this.value = obj;
+        if ((obj instanceof Double) || (obj instanceof Integer)) {
+            this.type = NUMBER;
+        } else if (obj instanceof String) {
+            this.type = NAME;
+        } else if (obj instanceof PDFObject[]) {
+            this.type = ARRAY;
+        } else if (obj instanceof Object[]) {
+            Object[] srcary = (Object[]) obj;
+            PDFObject[] dstary = new PDFObject[srcary.length];
+            for (int i = 0; i < srcary.length; i++) {
+                dstary[i] = new PDFObject(srcary[i]);
+            }
+            this.value = dstary;
+            this.type = ARRAY;
+        } else if (obj instanceof HashMap) {
+            this.type = DICTIONARY;
+        } else if (obj instanceof Boolean) {
+            this.type = BOOLEAN;
+        } else if (obj instanceof PDFParser.Tok) {
+            PDFParser.Tok tok = (PDFParser.Tok) obj;
+            if (tok.name.equals("true")) {
+                this.value = Boolean.TRUE;
+                this.type = BOOLEAN;
+            } else if (tok.name.equals("false")) {
+                this.value = Boolean.FALSE;
+                this.type = BOOLEAN;
+            } else {
+                this.value = tok.name;
+                this.type = NAME;
+            }
+        } else {
+            throw new PDFParseException("Bad type for raw PDFObject: " + obj);
+        }
     }
 
     /**
@@ -203,9 +190,9 @@ public class PDFObject {
      * @param xref the PDFXref to turn into a PDFObject
      */
     public PDFObject(PDFFile owner, PDFXref xref) {
-	this.type= INDIRECT;
-	this.value= xref;
-	this.owner= owner;
+        this.type = INDIRECT;
+        this.value = xref;
+        this.owner = owner;
     }
 
     /**
@@ -214,11 +201,11 @@ public class PDFObject {
      * @return the type of the object
      */
     public int getType() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getType();
         }
-        
-	return type;
+
+        return this.type;
     }
 
     /**
@@ -228,7 +215,7 @@ public class PDFObject {
      */
     public void setStream(ByteBuffer data) {
         this.type = STREAM;
-	this.stream = data;
+        this.stream = data;
     }
 
     /**
@@ -237,13 +224,13 @@ public class PDFObject {
      * garbage collected.
      */
     public Object getCache() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getCache();
-        } else if (cache != null) {
-	    return cache.get();
-	} else {
-	    return null;
-	}
+        } else if (this.cache != null) {
+            return this.cache.get();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -252,11 +239,11 @@ public class PDFObject {
      * @param obj the object to be cached
      */
     public void setCache(Object obj) throws IOException {
-        if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             dereference().setCache(obj);
             return;
         } else {
-            cache = new SoftReference<Object>(obj);
+            this.cache = new SoftReference<Object>(obj);
         }
     }
 
@@ -266,37 +253,37 @@ public class PDFObject {
      * @return the stream, or null, if this isn't a STREAM.
      */
     public byte[] getStream() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getStream();
-        } else if (type == STREAM && stream != null) {
+        } else if (this.type == STREAM && this.stream != null) {
             byte[] data = null;
-            
-            synchronized (stream) {
+
+            synchronized (this.stream) {
                 // decode
                 ByteBuffer streamBuf = decodeStream();
                 // ByteBuffer streamBuf = stream;
-                
+
                 // First try to use the array with no copying.  This can only
                 // be done if the buffer has a backing array, and is not a slice
                 if (streamBuf.hasArray() && streamBuf.arrayOffset() == 0) {
                     byte[] ary = streamBuf.array();
-                    
+
                     // make sure there is no extra data in the buffer
                     if (ary.length == streamBuf.remaining()) {
                         return ary;
                     }
                 }
-                
+
                 // Can't use the direct buffer, so copy the data (bad)
                 data = new byte[streamBuf.remaining()];
                 streamBuf.get(data);
-                
+
                 // return the stream to its starting position
                 streamBuf.flip();
             }
-            
+
             return data;
-        } else if (type == STRING) {
+        } else if (this.type == STRING) {
             return PDFStringUtil.asBytes(getStringValue());
         }
 
@@ -310,19 +297,19 @@ public class PDFObject {
      * @return the buffer, or null, if this isn't a STREAM.
      */
     public ByteBuffer getStreamBuffer() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getStreamBuffer();
-        } else if (type == STREAM && stream != null) {
-            synchronized (stream) {
+        } else if (this.type == STREAM && this.stream != null) {
+            synchronized (this.stream) {
                 ByteBuffer streamBuf = decodeStream();
                 // ByteBuffer streamBuf = stream;
                 return streamBuf.duplicate();
             }
-	} else if (type == STRING) {
-            String src= getStringValue();
+        } else if (this.type == STRING) {
+            String src = getStringValue();
             return ByteBuffer.wrap(src.getBytes());
         }
-        
+
         // wrong type
         return null;
     }
@@ -332,32 +319,33 @@ public class PDFObject {
      */
     private ByteBuffer decodeStream() throws IOException {
         ByteBuffer outStream = null;
-        
+
         // first try the cache
-        if (decodedStream != null) {
-            outStream = (ByteBuffer) decodedStream.get();
+        if (this.decodedStream != null) {
+            outStream = (ByteBuffer) this.decodedStream.get();
         }
-        
+
         // no luck in the cache, do the actual decoding
         if (outStream == null) {
-            stream.rewind();
-            outStream = PDFDecoder.decodeStream(this, stream);
+            this.stream.rewind();
+            outStream = PDFDecoder.decodeStream(this, this.stream);
+            this.decodedStream = new SoftReference(outStream);
         }
-        
+
         return outStream;
     }
-    
+
     /**
      * get the value as an int.  Will return 0 if this object
      * isn't a NUMBER.
      */
     public int getIntValue() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getIntValue();
-        } else if (type == NUMBER) {
-	    return ((Double)value).intValue();
-	}
-        
+        } else if (this.type == NUMBER) {
+            return ((Double) this.value).intValue();
+        }
+
         // wrong type
         return 0;
     }
@@ -367,12 +355,12 @@ public class PDFObject {
      * isn't a NUMBER
      */
     public float getFloatValue() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getFloatValue();
-        } else if (type == NUMBER) {
-	    return ((Double)value).floatValue();
-	} 
-        
+        } else if (this.type == NUMBER) {
+            return ((Double) this.value).floatValue();
+        }
+
         // wrong type
         return 0;
     }
@@ -382,28 +370,43 @@ public class PDFObject {
      * isn't a NUMBER.
      */
     public double getDoubleValue() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getDoubleValue();
-        } else if (type == NUMBER) {
-	    return ((Double)value).doubleValue();
-	}
-        
+        } else if (this.type == NUMBER) {
+            return ((Double) this.value).doubleValue();
+        }
+
         // wrong type
         return 0;
     }
 
     /**
+     * Returns the root of this object.
+     * @return
+     */
+    public PDFObject getRoot() {
+    	return owner.getRoot();
+    }
+    
+    /**
      * get the value as a String.  Will return null if the object
      * isn't a STRING, NAME, or KEYWORD.  This method will <b>NOT</b>
-     * convert a NUMBER to a String.
+     * convert a NUMBER to a String. If the string is actually
+     * a text string (i.e., may be encoded in UTF16-BE or PdfDocEncoding),
+     * then one should use {@link #getTextStringValue()} or use one
+     * of the {@link PDFStringUtil} methods on the result from this
+     * method. The string value represents exactly the sequence of 8 bit
+     * characters present in the file, decrypted and decoded as appropriate,
+     * into a string containing only 8 bit character values - that is, each
+     * char will be between 0 and 255.
      */
     public String getStringValue() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getStringValue();
-        } else if (type == STRING || type == NAME || type == KEYWORD) {
-	    return (String)value;
-	}
-        
+        } else if (this.type == STRING || this.type == NAME || this.type == KEYWORD) {
+            return (String) this.value;
+        }
+
         // wrong type
         return null;
     }
@@ -425,29 +428,29 @@ public class PDFObject {
      * of one element with this object as the element.
      */
     public PDFObject[] getArray() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getArray();
-        } else if (type == ARRAY) {
-	    PDFObject[] ary= (PDFObject[])value;
-	    return ary;
-	} else {
-	    PDFObject[] ary= new PDFObject[1];
-	    ary[0]= this;
-	    return ary;
-	}
+        } else if (this.type == ARRAY) {
+            PDFObject[] ary = (PDFObject[]) this.value;
+            return ary;
+        } else {
+            PDFObject[] ary = new PDFObject[1];
+            ary[0] = this;
+            return ary;
+        }
     }
-    
+
     /**
      * get the value as a boolean.  Will return false if this
      * object is not a BOOLEAN
      */
     public boolean getBooleanValue() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getBooleanValue();
-        } else if (type == BOOLEAN) {
-	    return value==Boolean.TRUE;
-	}
-        
+        } else if (this.type == BOOLEAN) {
+            return this.value == Boolean.TRUE;
+        }
+
         // wrong type
         return false;
     }
@@ -458,13 +461,13 @@ public class PDFObject {
      * null.
      */
     public PDFObject getAt(int idx) throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getAt(idx);
-        } else if (type == ARRAY) {
-	    PDFObject[] ary= (PDFObject[])value;
-	    return ary[idx];
-	}
-        
+        } else if (this.type == ARRAY) {
+            PDFObject[] ary = (PDFObject[]) this.value;
+            return ary[idx];
+        }
+
         // wrong type
         return null;
     }
@@ -475,12 +478,12 @@ public class PDFObject {
      * Iterator over the empty list.
      */
     public Iterator getDictKeys() throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getDictKeys();
-        } else if (type == DICTIONARY || type == STREAM) {
-	    return ((HashMap)value).keySet().iterator();
-	}
-        
+        } else if (this.type == DICTIONARY || this.type == STREAM) {
+            return ((HashMap) this.value).keySet().iterator();
+        }
+
         // wrong type
         return new ArrayList().iterator();
     }
@@ -490,10 +493,10 @@ public class PDFObject {
      * or a STREAM, returns null
      */
     public HashMap<String,PDFObject> getDictionary() throws IOException {
-        if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getDictionary();
-        } else if (type == DICTIONARY || type == STREAM) {
-            return (HashMap<String,PDFObject>) value;
+        } else if (this.type == DICTIONARY || this.type == STREAM) {
+            return (HashMap<String,PDFObject>) this.value;
         }
 
         // wrong type
@@ -506,15 +509,15 @@ public class PDFObject {
      * or there is no such key, returns null.
      */
     public PDFObject getDictRef(String key) throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().getDictRef(key);
-        } else if (type == DICTIONARY || type == STREAM) {
-	    key= key.intern();
-	    HashMap h= (HashMap)value;
-	    PDFObject obj= (PDFObject)h.get(key.intern());
-	    return obj;
-	}
-        
+        } else if (this.type == DICTIONARY || this.type == STREAM) {
+            key = key.intern();
+            HashMap h = (HashMap) this.value;
+            PDFObject obj = (PDFObject) h.get(key.intern());
+            return obj;
+        }
+
         // wrong type
         return null;
     }
@@ -528,14 +531,14 @@ public class PDFObject {
      * @return whether the dictionary is of the expected type
      */
     public boolean isDictType(String match) throws IOException {
-	if (type == INDIRECT) {
+        if (this.type == INDIRECT) {
             return dereference().isDictType(match);
-        } else if (type != DICTIONARY && type != STREAM) {
-	    return false;
-	}
-        
-	PDFObject obj= getDictRef("Type");
-	return obj != null && obj.getStringValue().equals(match);
+        } else if (this.type != DICTIONARY && this.type != STREAM) {
+            return false;
+        }
+
+        PDFObject obj = getDictRef("Type");
+        return obj != null && obj.getStringValue().equals(match);
     }
 
     public PDFDecrypter getDecrypter() {
@@ -545,8 +548,8 @@ public class PDFObject {
         // unit of encryption. So, if someone asks for the decrypter for
         // one of these in-stream objects, no decryption should
         // ever be applied. This can be seen with inline images.
-        return owner != null ?
-                owner.getDefaultDecrypter() :
+        return this.owner != null ?
+                this.owner.getDefaultDecrypter() :
                 IdentityDecrypter.getInstance();
     }
 
@@ -571,7 +574,7 @@ public class PDFObject {
      * @return the object number, if positive
      */
     public int getObjNum() {
-        return objNum;
+        return this.objNum;
     }
 
     /**
@@ -583,7 +586,7 @@ public class PDFObject {
      * @return the object generation number, if positive
      */
     public int getObjGen() {
-        return objGen;
+        return this.objGen;
     }
 
     /**
@@ -594,28 +597,29 @@ public class PDFObject {
     @Override
     public String toString() {
         try {
-            if (type == INDIRECT) {
+            if (this.type == INDIRECT) {
                 StringBuffer str = new StringBuffer ();
-                PDFXref xrefValue = (PDFXref) value;
-                str.append("Indirect to #" + xrefValue.getID() + (xrefValue.getCompressed() ? " comp" : ""));
+                str.append("Indirect to #" + ((PDFXref) this.value).getID()+(((PDFXref) this.value).getCompressed()?" comp":""));
                 try {
-                    PDFObject obj = dereference(true);
-                    str.append("\n" + (obj == null? "<ref>" : obj.toString()));
+// TODO [REMOVE] do not dereference by inspecting variables in eclipse (toString())
+//                    str.append("\n" + dereference().toString());
+                	PDFObject obj = cachedDereference();
+                    str.append("\n" + (obj==null?"<ref>":obj.toString()));
                 } catch (Throwable t) {
                     str.append(t.toString());
                 }
                 return str.toString();
-            } else if (type == BOOLEAN) {
+            } else if (this.type == BOOLEAN) {
                 return "Boolean: " + (getBooleanValue() ? "true" : "false");
-            } else if (type == NUMBER) {
+            } else if (this.type == NUMBER) {
                 return "Number: " + getDoubleValue();
-            } else if (type == STRING) {
+            } else if (this.type == STRING) {
                 return "String: " + getStringValue();
-            } else if (type == NAME) {
+            } else if (this.type == NAME) {
                 return "Name: /" + getStringValue();
-            } else if (type == ARRAY) {
-                return "Array, length=" + ((PDFObject[]) value).length;
-            } else if (type == DICTIONARY) {
+            } else if (this.type == ARRAY) {
+                return "Array, length=" + ((PDFObject[]) this.value).length;
+            } else if (this.type == DICTIONARY) {
                 StringBuffer sb = new StringBuffer();
                 PDFObject obj = getDictRef("Type");
                 if (obj != null) {
@@ -631,7 +635,7 @@ public class PDFObject {
                     sb.append("Untyped");
                 }
                 sb.append(" dictionary. Keys:");
-                HashMap hm = (HashMap) value;
+                HashMap hm = (HashMap) this.value;
                 Iterator it = hm.entrySet().iterator();
                 Map.Entry entry;
                 while (it.hasNext()) {
@@ -639,15 +643,15 @@ public class PDFObject {
                     sb.append("\n   " + entry.getKey() + "  " + entry.getValue());
                 }
                 return sb.toString();
-            } else if (type == STREAM) {
+            } else if (this.type == STREAM) {
                 byte[] st = getStream();
                 if (st == null) {
                     return "Broken stream";
                 }
                 return "Stream: [[" + new String(st, 0, st.length > 30 ? 30 : st.length) + "]]";
-            } else if (type == NULL) {
+            } else if (this.type == NULL) {
                 return "Null";
-            } else if (type == KEYWORD) {
+            } else if (this.type == KEYWORD) {
                 return "Keyword: " + getStringValue();
             /*	    } else if (type==IMAGE) {
             StringBuffer sb= new StringBuffer();
@@ -672,31 +676,50 @@ public class PDFObject {
      * an indirect object to cache the dereferenced value, if possible.
      */
     public PDFObject dereference() throws IOException {
-        return dereference(false);
+        if (this.type == INDIRECT) {
+            PDFObject obj = null;
+
+            if (this.cache != null) {
+                obj = (PDFObject) this.cache.get();
+            }
+
+            if (obj == null || obj.value == null) {
+                if (this.owner == null) {
+                    System.out.println("Bad seed (owner==null)!  Object=" + this);
+                }
+
+                obj = this.owner.dereference((PDFXref)this.value, getDecrypter());
+
+                this.cache = new SoftReference<PDFObject>(obj);
+            }
+
+            return obj;
+        } else {
+            // not indirect, no need to dereference
+            return this;
+        }
     }
 
     /**
      * Make sure that this object is dereferenced.  Use the cache of
      * an indirect object to cache the dereferenced value, if possible.
-     * @param fromCacheOnly If set to true, only the cache is checked and no real work is done.
      */
-    public PDFObject dereference(boolean fromCacheOnly) throws IOException {
-        if (type == INDIRECT) {
+    public PDFObject cachedDereference() throws IOException {
+        if (this.type == INDIRECT) {
             PDFObject obj = null;
 
-            if (cache != null) {
-                obj = (PDFObject) cache.get();
+            if (this.cache != null) {
+                obj = (PDFObject) this.cache.get();
             }
 
             if (obj == null || obj.value == null) {
-                if (owner == null) {
-                    throw new IOException("Bad seed (owner==null)!  Object=" + this);
+                if (this.owner == null) {
+                    System.out.println("Bad seed (owner==null)!  Object=" + this);
                 }
 
-                if (!fromCacheOnly) {
-                    obj = owner.dereference((PDFXref)value, getDecrypter());
-                    cache = new SoftReference<PDFObject>(obj);
-                }
+//                obj = owner.dereference((PDFXref)value, getDecrypter());
+//
+//                cache = new SoftReference<PDFObject>(obj);
             }
 
             return obj;
@@ -711,31 +734,33 @@ public class PDFObject {
      * @return whether currently indirect
      */
     public boolean isIndirect() {
-        return (type == INDIRECT);
+        return (this.type == INDIRECT);
     }
+
     /** 
      * Test whether two PDFObject are equal.  Objects are equal IFF they
      * are the same reference OR they are both indirect objects with the
      * same id and generation number in their xref
      */
-    @Override public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
         if (super.equals(o)) {
             // they are the same object
             return true;
-        } else if (type == INDIRECT && o instanceof PDFObject) {
+        } else if (this.type == INDIRECT && o instanceof PDFObject) {
             // they are both PDFObjects.  Check type and xref.
             PDFObject obj = (PDFObject) o;
-            
+
             if (obj.type == INDIRECT) {
-                PDFXref lXref = (PDFXref) value;
+                PDFXref lXref = (PDFXref) this.value;
                 PDFXref rXref = (PDFXref) obj.value;
-                
+
                 return ((lXref.getID() == rXref.getID()) &&
                 		(lXref.getGeneration() == rXref.getGeneration()) &&
                 		(lXref.getCompressed() == rXref.getCompressed()));
             }
         }
-        
+
         return false;
     }
 }

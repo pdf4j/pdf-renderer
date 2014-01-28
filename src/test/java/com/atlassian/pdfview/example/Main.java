@@ -1,4 +1,4 @@
-package main;
+package com.atlassian.pdfview.example;
 
 import java.awt.Image;
 import java.awt.event.MouseAdapter;

@@ -1,4 +1,4 @@
-package main;
+package com.atlassian.pdfview.example;
 
 import java.awt.Graphics;
 import java.awt.Image;

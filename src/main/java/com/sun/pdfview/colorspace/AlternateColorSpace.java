@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
@@ -30,27 +30,29 @@ import com.sun.pdfview.function.PDFFunction;
  * A color space that uses another color space to return values, and a
  * function to map between values in the input and input values to the
  * alternate color space
- */ 
+ */
 public class AlternateColorSpace extends PDFColorSpace {
     /** The alternate color space */
     private PDFColorSpace alternate;
-    
+   
     /** The function */
     private PDFFunction function;
-    
+   
+    private AltColorSpace altcolorspace;
+   
     /** Creates a new instance of AlternateColorSpace */
     public AlternateColorSpace(PDFColorSpace alternate, PDFFunction function) {
         super(null);
-        
+       
         this.alternate = alternate;
         this.function = function;
     }
-    
+   
     /**
      * get the number of components expected in the getPaint command
      */
     @Override public int getNumComponents() {
-	if (function != null) {
+    if (function != null) {
             return function.getNumInputs();
         } else {
             return alternate.getNumComponents();
@@ -70,15 +72,18 @@ public class AlternateColorSpace extends PDFColorSpace {
             // translate values using function
             components = function.calculate(components);
         }
-        
+       
         return alternate.getPaint(components);
     }
-    
+   
     /**
      * get the original Java ColorSpace.
      */
     @Override public ColorSpace getColorSpace() {
-	return alternate.getColorSpace();
+        if (altcolorspace == null) {
+            altcolorspace = new AltColorSpace(function, alternate.getColorSpace());
+        }
+        return altcolorspace;
     }
-    
+   
 }

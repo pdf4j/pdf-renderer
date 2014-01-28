@@ -50,7 +50,7 @@ public class PdfImageLoader
     
     public BufferedImage loadPage(int pageNumber)
     {
-        return loadPage(pageNumber, 1.0f);
+        return loadPage(pageNumber, 1.2f);
     }
     
     public int getNumberOfPages() 

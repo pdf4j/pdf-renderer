@@ -28,8 +28,11 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
 import java.awt.image.ImageObserver;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import org.monte.media.jpeg.JPEGImageIO;
 
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFParseException;
@@ -61,87 +64,41 @@ public class DCTDecode {
      * @param buf the DCT-encoded buffer
      * @param params the parameters to the decoder (ignored)
      * @return the decoded buffer
+     * @throws PDFParseException 
      */
-    protected static ByteBuffer decode(PDFObject dict, ByteBuffer buf,
-        PDFObject params) throws PDFParseException
-    {
-	//	System.out.println("DCTDecode image info: "+params);
+    protected static ByteBuffer decode(PDFObject dict, ByteBuffer buf, PDFObject params) throws PDFParseException {
+        // BEGIN PATCH W. Randelshofer Completely rewrote decode routine in
+        // order to
+        // support JPEG images in the CMYK color space.
+        BufferedImage bimg = loadImageData(buf);
+        byte[] output = ImageDataDecoder.decodeImageData(bimg);
+        return ByteBuffer.wrap(output);
+        // END PATCH W. Randelshofer Completely rewrote decode routine in order
+        // to
+        // support JPEG images in the CMYK color space.
+
+
+    }
+    /*************************************************************************
+     * @param buf
+     * @return
+     * @throws PDFParseException
+     ************************************************************************/
+    
+    private static BufferedImage loadImageData(ByteBuffer buf)
+            throws PDFParseException {
         buf.rewind();
-        
-        // copy the data into a byte array required by createimage
-        byte[] ary = new byte[buf.remaining()];
-        buf.get(ary);
-        
-        // wait for the image to get drawn
-	Image img= Toolkit.getDefaultToolkit().createImage(ary);
-	MyTracker mt= new MyTracker(img);
-	mt.waitForAll();
-        
-        // the default components per pixel is 3
-        int numComponents = 3;
-        
-        // see if we have a colorspace
+        byte[] input = new byte[buf.remaining()];
+        buf.get(input);
+        BufferedImage bimg;
         try {
-            PDFObject csObj = dict.getDictRef("ColorSpace");
-            if (csObj != null) {
-                // we do, so get the number of components
-                PDFColorSpace cs = PDFColorSpace.getColorSpace(csObj, null);
-                numComponents = cs.getNumComponents();
-            }
-        } catch (IOException ioe) {
-            // oh well
+            bimg = JPEGImageIO.read(new ByteArrayInputStream(input), false);
+        } catch (IOException ex) {
+            PDFParseException ex2 = new PDFParseException("DCTDecode failed");
+            ex2.initCause(ex);
+            throw ex2;
         }
-        
-        
-        // figure out the type
-        int type = BufferedImage.TYPE_INT_RGB;
-        if (numComponents == 1) {
-            type = BufferedImage.TYPE_BYTE_GRAY;
-        } else if (numComponents == 4) {
-            type = BufferedImage.TYPE_INT_ARGB;
-        }
-        
-        // create a buffered image
-        BufferedImage bimg = new BufferedImage(img.getWidth(null),
-					       img.getHeight(null),
-					       type);
-        Graphics bg= bimg.getGraphics();
-        
-        // draw the image onto it
-	bg.drawImage(img, 0, 0, null);
-        
-	byte[] output = null;
-        
-        if (type == BufferedImage.TYPE_INT_RGB) {
-            // read back the data
-            DataBufferInt db = (DataBufferInt) bimg.getData().getDataBuffer();
-            int[] data = db.getData();
-        
-            output = new byte[data.length*3];
-            for (int i=0; i<data.length; i++) {
-                output[i*3]= (byte)(data[i]>>16);
-                output[i*3+1]= (byte)(data[i]>>8);
-                output[i*3+2]= (byte)(data[i]);
-            }
-        } else if (type == BufferedImage.TYPE_BYTE_GRAY) {
-            DataBufferByte db = (DataBufferByte) bimg.getData().getDataBuffer();
-            output = db.getData(); 
-        } else if (type == BufferedImage.TYPE_INT_ARGB) {
-            // read back the data
-            DataBufferInt db = (DataBufferInt) bimg.getData().getDataBuffer();
-            int[] data = db.getData();
-        
-            output = new byte[data.length*4];
-            for (int i=0; i<data.length; i++) {
-                output[i*4]= (byte)(data[i]>>24);
-                output[i*4+1]= (byte)(data[i]>>16);
-                output[i*4+2]= (byte)(data[i]>>8);
-                output[i*4+3]= (byte)(data[i]);
-            }
-        }
-        
-	//	System.out.println("Translated data");
-	return ByteBuffer.wrap(output);
+        return bimg;
     }
 }
 

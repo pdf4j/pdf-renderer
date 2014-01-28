@@ -40,6 +40,7 @@ import java.io.IOException;
 import com.sun.pdfview.PDFObject;
 import com.sun.pdfview.PDFPaint;
 import com.sun.pdfview.PDFParseException;
+import com.sun.pdfview.colorspace.PDFColorSpace;
 import com.sun.pdfview.function.PDFFunction;
 
 /**
@@ -271,6 +272,9 @@ public class ShaderType2 extends PDFShader {
         /** the end of the axis */
         private Point2D end;
         
+        private float dt1t0;
+        private double dx1x0, dy1y0, sqdx1x0psqdy1y0;
+                
         /**
          * Create a paint context
          */
@@ -278,6 +282,12 @@ public class ShaderType2 extends PDFShader {
             this.colorModel = colorModel;
             this.start = start;
             this.end = end;
+            
+            //pre calculate some often used values
+            dt1t0 = getMaxT() - getMinT();
+            dx1x0 = end.getX() - start.getX();
+            dy1y0 = end.getY() - start.getY();
+            sqdx1x0psqdy1y0 = dx1x0*dx1x0 + dy1y0*dy1y0;
         }
         
         public void dispose() {
@@ -290,48 +300,62 @@ public class ShaderType2 extends PDFShader {
         
         public Raster getRaster(int x, int y, int w, int h) {
             ColorSpace cs = getColorModel().getColorSpace();
+            PDFColorSpace shadeCSpace = getColorSpace();
             
             PDFFunction functions[] = getFunctions();
             int numComponents = cs.getNumComponents();
 
             float x0 = (float) start.getX();
-            float x1 = (float) end.getX();
             float y0 = (float) start.getY();
-            float y1 = (float) end.getY();
-            
+
             float[] inputs = new float[1];
-            float[] outputs = new float[numComponents];
-            
+            float[] outputs = new float[shadeCSpace.getNumComponents()];
+            float[] outputRBG = new float[numComponents];
+
             // all the data, plus alpha channel
             int[] data = new int[w * h * (numComponents + 1)];
+            float lastInput = Float.POSITIVE_INFINITY;
+            final float tol = TOLERANCE * (getMaxT() - getMinT());
             
             // for each device coordinate
             for (int j = 0; j < h; j++) {
-                for (int i = 0; i < w + 8; i += 8) {
+                for (int i = 0; i < w; i += 1) {
+                    boolean render = true;
                     // find t for that user coordinate
-                    float xp = getXPrime(i + x, j + y, x0, y0, x1, y1);
-                    float t = getT(xp);
-                    
-                    // calculate the pixel values at t
-                    inputs[0] = t;
-                    if (functions.length == 1) {
-                        functions[0].calculate(inputs, 0, outputs, 0);
-                    } else {
-                        for (int c = 0; c < functions.length; c++) {
-                            functions[c].calculate(inputs, 0, outputs, c);
-                        } 
-                    }
-                 
-                    for (int q = i; q < i + 8 && q < w; q++) {
-                        int base = (j * w + q) * (numComponents + 1);
+                    float xp = getXPrime(i + x, j + y, x0, y0);
+                    float t = 0;
+                    if (xp >= 0 && xp <= 1) t = getMinT() + (dt1t0 * xp);
+                    else if (xp < 0 && extendStart) t = getMinT();
+                    else if (xp > 1 && extendEnd) t = getMaxT();
+                    else render = false;
+
+                    if (render) {
+                        // calculate the pixel values at t
+                        inputs[0] = t;
+                        if (Math.abs(lastInput - t) > tol){
+                            if (functions.length == 1) {
+                                functions[0].calculate(inputs, 0, outputs, 0);
+                            } else {
+                                for (int c = 0; c < functions.length; c++) {
+                                    functions[c].calculate(inputs, 0, outputs, c);
+                                } 
+                            }
+                            if (!shadeCSpace.getColorSpace().isCS_sRGB()) {
+                                //Can be quite slow
+                                outputRBG = shadeCSpace.getColorSpace().toRGB(outputs);
+                            }
+                            else outputRBG = outputs;
+                            lastInput = t;
+                        }
+                        int base = (j * w + i) * (numComponents + 1);
                         for (int c = 0; c < numComponents; c++) {
-                            data[base + c] = (int) (outputs[c] * 255);
+                            data[base + c] = (int) (outputRBG[c] * 255);
                         }
                         data[base + numComponents] = 255; 
                     }
                 }
             }
-            
+
             WritableRaster raster =
                 getColorModel().createCompatibleWritableRaster(w, h);
             raster.setPixels(0, 0, w, h, data);
@@ -345,29 +369,11 @@ public class ShaderType2 extends PDFShader {
          *      -------------------------------------------
          *               (x1 - x0)^2 + (y1 - y0)^2
          */
-        private float getXPrime(float x, float y, float x0, float y0,
-                                float x1, float y1) {
+        private float getXPrime(float x, float y, float x0, float y0) {
            
-            double tp = (((x1 - x0) * (x - x0)) + ((y1 - y0) * (y - y0))) /
-                       (Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
+            double tp = ((dx1x0* (x - x0)) + (dy1y0 * (y - y0))) / sqdx1x0psqdy1y0;
         
             return (float) tp;
-        }
-        
-        /**
-         * t = t0 + (t1 - t0) x x'
-         */
-        private float getT(float xp) {
-            float t0 = getMinT();
-            float t1 = getMaxT();
-            
-            if (xp < 0) {
-                return t0;
-            } else if (xp > 1) {
-                return t1;
-            } else {
-                return t0 + ((t1 - t0) * xp);
-            }
         }
     }
 }

@@ -1,0 +1,5 @@
+This plugin contains code licensed under the LGPL (http://www.gnu.org/licenses/lgpl.html) from the pdf-renderer
+project (https://pdf-renderer.dev.java.net/)
+
+You can download the source code of the version modified by Atlassian from our maven repository here:
+ https://maven.atlassian.com/content/repositories/atlassian-public/com/atlassian/confluence/officeconnector/pdf-renderer

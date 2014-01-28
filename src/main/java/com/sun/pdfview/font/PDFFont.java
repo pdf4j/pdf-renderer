@@ -143,10 +143,7 @@ public abstract class PDFFont {
             font = new Type0Font(baseFont, obj, descriptor);
         } else if (subType.equals("Type1")) {
             // load a type1 font
-            if (descriptor == null) {
-                // it's one of the built-in fonts
-                font = new BuiltinFont(baseFont, obj);
-            } else if (descriptor.getFontFile() != null) {
+            if (descriptor.getFontFile() != null) {
                 // it's a Type1 font, included.
                 font = new Type1Font(baseFont, obj, descriptor);
             } else if (descriptor.getFontFile3() != null) {
@@ -154,7 +151,7 @@ public abstract class PDFFont {
                 font = new Type1CFont(baseFont, obj, descriptor);
             } else {
                 // no font info. Fake it based on the FontDescriptor
-                //		System.out.println("Fakeout native font");
+                //      System.out.println("Fakeout native font");
                 font = new BuiltinFont(baseFont, obj, descriptor);
             }
         } else if (subType.equals("TrueType")) {
@@ -169,11 +166,18 @@ public abstract class PDFFont {
             // load a type 3 font
             font = new Type3Font(baseFont, obj, resources, descriptor);
         } else if (subType.equals("CIDFontType2")) {
-            font = new CIDFontType2(baseFont, obj, descriptor);
+            if(descriptor.getFontFile2() != null) {
+                font = new CIDFontType2(baseFont, obj, descriptor);
+            }else {
+                // fake it with a built-in font
+                font = new BuiltinFont(baseFont, obj, descriptor);
+            }
         } else if (subType.equals("CIDFontType0")) {
-            font = new CIDFontType2(baseFont, obj, descriptor);
-//            font = new CIDFontType0(baseFont, obj, descriptor);
-//            throw new IOException ("CIDFontType0 is unimplemented. " + obj);
+            if(descriptor.getFontFile2() !=null){
+                font = new CIDFontType2(baseFont, obj, descriptor);
+            }else {
+                font = new CIDFontType0(baseFont, obj, descriptor);
+            }
         } else {
             throw new PDFParseException("Don't know how to handle a '" +
                     subType + "' font");

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import com.sun.pdfview.PDFObject;
+import com.sun.pdfview.font.cid.ToUnicodeMap;
 
 /**
  * A CMap maps from a character in a composite font to a font/glyph number
@@ -88,7 +89,7 @@ public abstract class PDFCMap {
      * Parse a CMap from a CMap stream
      */
     protected static PDFCMap parseCMap(PDFObject map) throws IOException {
-        throw new IOException("Parsing CMap Files Unsupported!");
+        return new ToUnicodeMap(map);
     }
     
     /**

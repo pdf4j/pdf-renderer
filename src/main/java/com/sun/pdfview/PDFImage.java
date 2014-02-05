@@ -615,7 +615,7 @@ public class PDFImage {
             return new DecodeComponentColorModel(altCS, bits);
         } else {
             // CMYK color space has been converted to RGB in DCTDecode
-            if (cs.getColorSpace().getType() == ColorSpace.TYPE_CMYK) {
+            if (cs.getColorSpace().getType() == ColorSpace.TYPE_CMYK && isDCTDecoded()) {
                 ColorSpace rgbCS = ColorSpace.getInstance(ColorSpace.CS_sRGB);
                 int[] bits = new int[rgbCS.getNumComponents()];
                 for (int i = 0; i < bits.length; i++) {
@@ -632,6 +632,23 @@ public class PDFImage {
         }
     }
 
+    /**
+     * Detect if this object has been used DCTDecode
+     * @return boolean
+     */
+    private boolean isDCTDecoded() {
+        try {
+            PDFObject filterObj = imageObj.getDictRef("Filter");
+            if (filterObj != null) {
+                String enctype = filterObj.getStringValue();
+                return enctype.equals("DCTDecode") || (enctype.equals("DCT"));
+            }
+            return false;
+        } catch (IOException ioe) {
+            System.err.println("Error reading enctype");
+            return false;
+        }
+    }
     /**
      * Normalize an array of values to match the decode array
      */

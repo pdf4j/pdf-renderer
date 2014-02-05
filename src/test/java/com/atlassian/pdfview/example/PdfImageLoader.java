@@ -37,7 +37,7 @@ public class PdfImageLoader
         
         PDFPage page = pdfFile.getPage(pageNumber);
         
-        Rectangle rect = new Rectangle(0, 0, (int) page.getBBox().getWidth(), (int) page.getBBox().getHeight());
+        Rectangle rect = page.getBBox().getBounds();
         Image img = page.getImage((int)(rect.width*scale), (int) (rect.height*scale), rect, null, true, true);
         
         BufferedImage bufferedImage = new BufferedImage((int)(rect.width*scale), (int) (rect.height*scale), BufferedImage.TYPE_INT_RGB);

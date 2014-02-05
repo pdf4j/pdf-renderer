@@ -37,6 +37,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.pdfview.annotation.PDFAnnotation;
+
 /**
  * A PDFPage encapsulates the parsed commands required to render a
  * single page from a PDFFile.  The PDFPage is not itself drawable;
@@ -68,7 +70,9 @@ public class PDFPage {
     private Cache cache;
     /** a map from image info to weak references to parsers that are active */
     private Map<ImageInfo,WeakReference> renderers;
-
+    
+    /** List of annotations for this page*/
+    private List<PDFAnnotation> annots;
     /**
      * create a PDFPage with dimensions in bbox and rotation.
      */
@@ -625,6 +629,38 @@ public class PDFPage {
                 }
             }
         }
+    }
+    
+    /*************************************************************************
+     * Get a list of all annotations for this PDF page
+     * @return List<PDFAnnotation>
+     ************************************************************************/
+    public List<PDFAnnotation> getAnnots() {
+        return this.annots;
+    }
+
+    /*************************************************************************
+     * Get a list of all annotations of the given type for this PDF page
+     * @return List<PDFAnnotation>
+     ************************************************************************/
+    public List<PDFAnnotation> getAnnots(int type) {
+        List<PDFAnnotation> list = new ArrayList<PDFAnnotation>();
+        if(this.annots != null) {
+            for(PDFAnnotation annot:this.annots){
+                if(annot.getType() == type){
+                    list.add(annot);
+                }
+            }
+        }
+        return list;
+    }
+
+    /*************************************************************************
+     * Set annotations for this PDF page
+     * @param annots
+     ************************************************************************/
+    public void setAnnots(List<PDFAnnotation> annots) {
+        this.annots = annots;
     }
 }
 

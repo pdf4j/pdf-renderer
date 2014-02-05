@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 import com.sun.pdfview.action.*;
+import com.sun.pdfview.annotation.PDFAnnotation;
 import com.sun.pdfview.decrypt.*;
 
 /**
@@ -1636,9 +1637,30 @@ public class PDFFile {
             rotation = rotateObj.getIntValue();
         }
 
+        // read annotations and add them to the PDF page
+        PDFObject annots = getInheritedValue(pageObj, "Annots");
+        List<PDFAnnotation> annotationList = new ArrayList<PDFAnnotation>();
+        if (annots != null) {
+            if (annots.getType() != PDFObject.ARRAY) {
+                throw new PDFParseException("Can't parse annotations: " + annots.toString());
+            }
+            PDFObject[] array = annots.getArray();
+            for (PDFObject object : array) {
+                try {
+                    PDFAnnotation pdfAnnot = PDFAnnotation.createAnnotation(object);
+                    annotationList.add(pdfAnnot);
+                }catch (PDFParseException e) {
+                    e.printStackTrace();
+                    // do nothing, annotations could not be parsed and links will not be displayed.
+                }
+            }            
+        }
+        
         Rectangle2D bbox = ((cropbox == null) ? mediabox : cropbox);
-
-        return new PDFPage(pagenum, bbox, rotation, cache);
+        PDFPage page = new PDFPage(pagenum, bbox, rotation, this.cache);
+        page.setAnnots(annotationList);
+        
+        return page;
     }
 
     /**

@@ -5,24 +5,31 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
+import org.apache.commons.io.FileUtils;
 
 public class Main
 {
-    static final JTextField filesource = new JTextField("/Users/tue.dang/Downloads/pdfrenderer/does not show correctly.pdf");
+    static final JTextField filesource = new JTextField("/Users/tue.dang/Downloads/pdfrenderer/");
     
     static JTextField pageNumber;
     
     static PdfImageLoader pdfImageLoader;
     static JLabel imageHolder = new JLabel();
+    static final JComboBox listFile = new JComboBox();
     
     public static int getPageNumber()
     {
@@ -41,7 +48,29 @@ public class Main
         frame.setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
         
         //Panel with url pdf
-        JPanel p = new JPanel(); 
+        JPanel p = new JPanel();
+        filesource.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) {
+              warn();
+            }
+            public void removeUpdate(DocumentEvent e) {
+              warn();
+            }
+            public void insertUpdate(DocumentEvent e) {
+              warn();
+            }
+
+            public void warn() {
+                String[] extFiles = {"pdf"};
+                Collection<File> pdfFiles = FileUtils.listFiles(new File(filesource.getText().trim()), extFiles, true);
+                listFile.removeAllItems();
+                for (File file : pdfFiles) {
+                    listFile.addItem(file);
+                }
+                
+                
+            }
+          });
         p.add(filesource);
         
         //Load button
@@ -53,7 +82,13 @@ public class Main
                 resetPageNumber();
                 try
                 {
-                    pdfImageLoader = new PdfImageLoader(filesource.getText());
+                    String fsrc;
+                    if (new File(filesource.getText()).isFile()) {
+                        fsrc = filesource.getText();
+                    } else {
+                        fsrc = listFile.getSelectedItem().toString();
+                    }
+                    pdfImageLoader = new PdfImageLoader(fsrc);
                     Image img = pdfImageLoader.loadPage(getPageNumber());
                     imageHolder.setIcon(new ImageIcon(img));
                     frame.setTitle(frame.getTitle()+"/"+pdfImageLoader.getNumberOfPages());
@@ -122,12 +157,13 @@ public class Main
         //page number
         pageNumber = new JTextField("1");
         
-        //Generate image button
-        
+        //list file
+        p.add(loadPdf);
+        frame.getContentPane().add(p);
+        listFile.updateUI();
+        frame.getContentPane().add(listFile);
         
         frame.add(imageHolder);
-        frame.getContentPane().add(p);
-        frame.getContentPane().add(loadPdf);
         frame.getContentPane().add(generateImageButton);
         frame.getContentPane().add(pageNumber);
         frame.getContentPane().add(viewPageButton);

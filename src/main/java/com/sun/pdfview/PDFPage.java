@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.sun.pdfview.annotation.PDFAnnotation;
+import com.sun.pdfview.annotation.PDFAnnotation.ANNOTATION_TYPE;
 
 /**
  * A PDFPage encapsulates the parsed commands required to render a
@@ -207,9 +208,8 @@ public class PDFPage {
         // not in the cache, so create it
         if (image == null) {
             if (drawbg) {
-                info.bgColor = Color.WHITE;
+                info.bgColor = new Color(1f,0f,0f,.5f );
             }
-
             image = new RefImage(info.width, info.height,
                     BufferedImage.TYPE_INT_ARGB);
             renderer = new PDFRenderer(this, info, image);
@@ -643,7 +643,7 @@ public class PDFPage {
      * Get a list of all annotations of the given type for this PDF page
      * @return List<PDFAnnotation>
      ************************************************************************/
-    public List<PDFAnnotation> getAnnots(int type) {
+    public List<PDFAnnotation> getAnnots(ANNOTATION_TYPE type) {
         List<PDFAnnotation> list = new ArrayList<PDFAnnotation>();
         if(this.annots != null) {
             for(PDFAnnotation annot:this.annots){
@@ -661,6 +661,23 @@ public class PDFPage {
      ************************************************************************/
     public void setAnnots(List<PDFAnnotation> annots) {
         this.annots = annots;
+        for (PDFAnnotation pdfAnnotation : annots) {
+            // add command to the page if needed
+            List<PDFCmd> pcmd = pdfAnnotation.getPageCommandsForAnnotation();
+            this.commands.addAll(0,pcmd);
+        }
+    }
+    public static PDFImageCmd createImageCmd(PDFImage image) {
+        return new PDFImageCmd(image);
+    }
+    public static PDFPushCmd createPushCmd() {
+        return new PDFPushCmd();
+    }
+    public static PDFPopCmd createPopCmd() {
+        return new PDFPopCmd();
+    }
+    public static PDFXformCmd createXFormCmd(AffineTransform at) {
+        return new PDFXformCmd(new AffineTransform(at));
     }
 }
 

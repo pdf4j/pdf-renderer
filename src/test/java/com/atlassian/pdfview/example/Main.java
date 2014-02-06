@@ -23,7 +23,7 @@ import org.apache.commons.io.FileUtils;
 
 public class Main
 {
-    static final JTextField filesource = new JTextField("/Users/tue.dang/Downloads/pdfrenderer/");
+    static final JTextField filesource = new JTextField("/Users/tue.dang/Downloads/pdfrenderer/CONF-19819/Balta IT - Wakkensteenweg 2 Sint-Baafs-Vijve.pdf");
     
     static JTextField pageNumber;
     

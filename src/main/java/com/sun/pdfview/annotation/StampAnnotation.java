@@ -5,6 +5,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.geom.Rectangle2D.Float;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -15,83 +16,41 @@ import com.sun.pdfview.PDFPage;
 import com.sun.pdfview.PDFParseException;
 import com.sun.pdfview.PDFParser;
 
-/**
- * PDF annotation describing a widget.
- * @since Aug 20, 2010
- */
-public class WidgetAnnotation extends PDFAnnotation {
-
-	private String fieldValue;
-	private FieldType fieldType;
-	private String fieldName;
-	private PDFObject fieldValueRef;
-	private List<PDFCmd> cmd;
-
-	/**
-	 * Type for PDF form elements
-	 * @version $Id: WidgetAnnotation.java,v 1.2 2010-09-30 10:34:44 xphc Exp $ 
-	 * @author  xphc
-	 * @since Aug 20, 2010
-	 */
-	public enum FieldType {
-		/** Button Field */
-		Button("Btn"),
-		/** Text Field */
-		Text("Tx"),
-		/** Choice Field */
-		Choice("Ch"),
-		/** Signature Field */
-		Signature("Sig");
+/*****************************************************************************
+ * PDF annotation describing a stamp
+ *
+ * @author Katja Sondermann
+ * @since 26.03.2012
+ ****************************************************************************/
+public class StampAnnotation extends PDFAnnotation {
+	private String iconName;
+	private PDFAnnotation popupAnnotation;
+	private PDFObject onAppearance;
+	private PDFObject offAppearance;
+	private List<PDFCmd> onCmd;
+	private List<PDFCmd> offCmd;
+	private boolean appearanceStateOn;
+	
+	/*************************************************************************
+	 * Constructor
+	 * @param annotObject
+	 * @throws IOException 
+	 ************************************************************************/
+	public StampAnnotation(PDFObject annotObject, ANNOTATION_TYPE type) throws IOException {
+		super(annotObject, type);
 		
-		private final String typeCode;
-
-		FieldType(String typeCode) {
-			this.typeCode = typeCode;
-		}
+		parsePopupAnnotation(annotObject.getDictRef("Popup"));
 		
-		static FieldType getByCode(String typeCode) {
-			FieldType[] values = values();
-			for (FieldType value : values) {
-				if (value.typeCode.equals(typeCode))
-					return value;
-			}
-			return null;
-		}
+		parseAP(annotObject.getDictRef("AP"));			
 	}
 
-	public WidgetAnnotation(PDFObject annotObject) throws IOException {
-		super(annotObject, ANNOTATION_TYPE.WIDGET);
-		
-		// The type of field that this dictionary describes. Field type is
-		// present for terminal fields but is inherited from parent if absent
-		// (see PDF Reference 1.7 table 8.69)
-		PDFObject fieldTypeRef = annotObject.getDictRef("FT");
-		if (fieldTypeRef != null) {
-			// terminal field
-			this.fieldType = FieldType.getByCode(fieldTypeRef.getStringValue());
-		}
-		else {
-			// must check parent since field type is inherited
-			PDFObject parent = annotObject.getDictRef("Parent");
-			while (parent != null && parent.isIndirect()) {
-				parent = parent.dereference();
-			}
-			if (parent != null) {
-				fieldTypeRef = parent.getDictRef("FT");
-				this.fieldType = FieldType.getByCode(fieldTypeRef.getStringValue());
-			}
-		}
-		
-		// Name defined for the field
-		PDFObject fieldNameRef = annotObject.getDictRef("T");
-		if (fieldNameRef != null) {
-			this.fieldName = fieldNameRef.getTextStringValue();
-		}
-		this.fieldValueRef = annotObject.getDictRef("V");
-		if (this.fieldValueRef != null) {
-			this.fieldValue = this.fieldValueRef.getTextStringValue();
-		}
-		parseAP(annotObject.getDictRef("AP"));
+	/*************************************************************************
+	 * Constructor
+	 * @param annotObject
+	 * @throws IOException 
+	 ************************************************************************/
+	public StampAnnotation(PDFObject annotObject) throws IOException {
+		this(annotObject, ANNOTATION_TYPE.STAMP);
 	}
 	
 	private void parseAP(PDFObject dictRef) throws IOException {
@@ -102,9 +61,28 @@ public class WidgetAnnotation extends PDFAnnotation {
 		if(normalAP == null) {
 			return;
 		}
-		cmd = parseCommand(normalAP);
+		if(normalAP.getType() == PDFObject.DICTIONARY) {
+			this.onAppearance = normalAP.getDictRef("On");
+			this.offAppearance = normalAP.getDictRef("Off");
+			PDFObject as = dictRef.getDictRef("AS");			
+			this.appearanceStateOn = (as != null) && ("On".equals(as.getStringValue()));
+		}else {
+			this.onAppearance = normalAP;
+			this.offAppearance = null;
+			appearanceStateOn = true;
+		}
+		parseCommands();
 	}
-	
+
+	private void parseCommands() throws IOException {
+		if(onAppearance != null) {
+			onCmd = parseCommand(onAppearance);
+		}
+		if(offAppearance != null) {
+			offCmd = parseCommand(offAppearance);
+		}
+	}
+
 	private List<PDFCmd> parseCommand(PDFObject obj) throws IOException {
         String type = obj.getDictRef("Subtype").getStringValue();
         if (type == null) {
@@ -113,6 +91,7 @@ public class WidgetAnnotation extends PDFAnnotation {
         ArrayList<PDFCmd> result = new ArrayList<PDFCmd>();
         result.add(PDFPage.createPushCmd());
         result.add(PDFPage.createPushCmd());
+        
         if (type.equals("Image")) {
             // stamp annotation transformation
             AffineTransform rectAt = getPositionTransformation();
@@ -155,16 +134,17 @@ public class WidgetAnnotation extends PDFAnnotation {
 
             PDFParser form = new PDFParser(formCmds, obj.getStream(), r);
             form.go(true);
-
-            result.addAll(formCmds.getCommands());
+            List<PDFCmd> cmds = formCmds.getCommands();
+            result.addAll(cmds);
         } else {
             throw new PDFParseException("Unknown XObject subtype: " + type);
         }
         result.add(PDFPage.createPopCmd());
         result.add(PDFPage.createPopCmd());
+        
         return result;
 	}
-	
+
 	/**
 	 * Transform to the position of the stamp annotation
 	 * @return
@@ -180,46 +160,61 @@ public class WidgetAnnotation extends PDFAnnotation {
 		return new AffineTransform(f);
 	}
 
-	/**
-	 * Returns the type of the field
-	 * @return Field type
-	 */
-	public FieldType getFieldType() {
-		return this.fieldType;
-	}
-	
-	/**
-	 * The field's value as a string. Might be {@code null}.
-	 * @return The field value or {@code null}.
-	 */
-	public String getFieldValue() {
-		return this.fieldValue;
+	private void parsePopupAnnotation(PDFObject popupObj) throws IOException {
+		this.popupAnnotation = (popupObj != null)?createAnnotation(popupObj):null;
 	}
 
 	/**
-	 * Sets the field value for a text field. Note: this doesn't actually change
-	 * the PDF file yet.
-	 * 
-	 * @param fieldValue
-	 *            The new value for the text field
+	 * @return the iconName
 	 */
-	public void setFieldValue(String fieldValue) {
-		this.fieldValue = fieldValue;
+	public String getIconName() {
+		return iconName;
 	}
 
 	/**
-	 * Name for this widget.
-	 * @return Widget name
+	 * @return the popupAnnotation
 	 */
-	public String getFieldName() {
-		return this.fieldName;
+	public PDFAnnotation getPopupAnnotation() {
+		return popupAnnotation;
 	}
-	
+
+	/**
+	 * @return the onAppearance
+	 */
+	public PDFObject getOnAppearance() {
+		return onAppearance;
+	}
+
+	/**
+	 * @return the offAppearance
+	 */
+	public PDFObject getOffAppearance() {
+		return offAppearance;
+	}
+
+	/**
+	 * @return the appearanceStateOn
+	 */
+	public boolean isAppearanceStateOn() {
+		return appearanceStateOn;
+	}
+
+	public void switchAppearance() {
+		this.appearanceStateOn = !this.appearanceStateOn;
+	}
+
+	public PDFObject getCurrentAppearance() {
+		return appearanceStateOn?onAppearance:offAppearance;
+	}
+
+	public List<PDFCmd> getCurrentCommand() {
+		return appearanceStateOn?onCmd:offCmd;
+	}
+
 	@Override
 	public List<PDFCmd> getPageCommandsForAnnotation() {
 		List<PDFCmd> pageCommandsForAnnotation = super.getPageCommandsForAnnotation();
-		pageCommandsForAnnotation.addAll(cmd);
+		pageCommandsForAnnotation.addAll(getCurrentCommand());
 		return pageCommandsForAnnotation;
 	}
-	
 }

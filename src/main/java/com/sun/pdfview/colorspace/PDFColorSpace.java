@@ -122,7 +122,7 @@ public class PDFColorSpace {
      *
      * @param csobj the PDFObject with the colorspace information
      */
-    public static PDFColorSpace getColorSpace(PDFObject csobj, Map resources)
+    public static PDFColorSpace getColorSpace(PDFObject csobj, Map<?, ?> resources)
         throws IOException {
         String name;
 
@@ -134,15 +134,9 @@ public class PDFColorSpace {
 
         if (csobj.getType() == PDFObject.NAME) {
             name = csobj.getStringValue();
-
-            if (name.equals("DeviceGray") || name.equals("G")) {
-                return getColorSpace(COLORSPACE_GRAY);
-            } else if (name.equals("DeviceRGB") || name.equals("RGB")) {
-                return getColorSpace(COLORSPACE_RGB);
-            } else if (name.equals("DeviceCMYK") || name.equals("CMYK")) {
-                return getColorSpace(COLORSPACE_CMYK);
-            } else if (name.equals("Pattern")) {
-                return getColorSpace(COLORSPACE_PATTERN);
+            PDFColorSpace pdfColorSpace = getColorSpaceByName(name);
+            if (pdfColorSpace != null) {
+                return pdfColorSpace;
             } else if (colorSpaces != null) {
                 csobj = (PDFObject) colorSpaces.getDictRef(name);
             }
@@ -193,13 +187,30 @@ public class PDFColorSpace {
 
             return new PatternSpace(base);
         } else {
-            throw new PDFParseException("Unknown color space: " + name +
-                " with " + ary[1]);
+            //at this step, the [/name <<dict>>]  can be also the csobj name.
+            PDFColorSpace pdfColorSpace = getColorSpaceByName(name);
+            if (pdfColorSpace != null) {
+                return pdfColorSpace;
+            }
+            throw new PDFParseException("Unknown color space: " + name + " with " + ary[1]);
         }
 
         csobj.setCache(value);
 
         return value;
+    }
+    
+    private static PDFColorSpace getColorSpaceByName(String name) {
+        if (name.equals("DeviceGray") || name.equals("G")) {
+            return getColorSpace(COLORSPACE_GRAY);
+        } else if (name.equals("DeviceRGB") || name.equals("RGB")) {
+            return getColorSpace(COLORSPACE_RGB);
+        } else if (name.equals("DeviceCMYK") || name.equals("CMYK")) {
+            return getColorSpace(COLORSPACE_CMYK);
+        } else if (name.equals("Pattern")) {
+            return getColorSpace(COLORSPACE_PATTERN);
+        }
+        return null;
     }
 
     /**

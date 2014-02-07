@@ -41,10 +41,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-
-
-
-
+import org.apache.log4j.Logger;
 
 import com.sun.pdfview.colorspace.AlternateColorSpace;
 import com.sun.pdfview.colorspace.IndexedColor;
@@ -55,6 +52,8 @@ import com.sun.pdfview.function.FunctionType0;
  * Encapsulates a PDF Image
  */
 public class PDFImage {
+
+    private static final Logger log = Logger.getLogger(PDFImage.class);
 
     public static void dump(PDFObject obj) throws IOException {
         p("dumping PDF object: " + obj);
@@ -645,7 +644,7 @@ public class PDFImage {
             }
             return false;
         } catch (IOException ioe) {
-            System.err.println("Error reading enctype");
+            log.error("Error reading enctype", ioe);
             return false;
         }
     }

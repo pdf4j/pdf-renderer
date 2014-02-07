@@ -35,7 +35,7 @@ public class LinkAnnotation extends PDFAnnotation {
 	 * @param annotObject
 	 * @throws IOException 
 	 ************************************************************************/
-	protected LinkAnnotation(PDFObject annotObject) throws IOException {
+	public LinkAnnotation(PDFObject annotObject) throws IOException {
 		super(annotObject, ANNOTATION_TYPE.LINK);
 		// a link annotation can either have an action (GoTo or URI) or a destination (DEST)
 		PDFObject actionObj = annotObject.getDictRef("A");

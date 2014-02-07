@@ -208,7 +208,7 @@ public class PDFPage {
         // not in the cache, so create it
         if (image == null) {
             if (drawbg) {
-                info.bgColor = new Color(1f,0f,0f,.5f );
+                info.bgColor = Color.WHITE;
             }
             image = new RefImage(info.width, info.height,
                     BufferedImage.TYPE_INT_ARGB);

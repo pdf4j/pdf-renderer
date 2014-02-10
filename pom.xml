@@ -21,10 +21,11 @@
             <artifactId>jbig2</artifactId>
             <version>5.3</version>
         </dependency>
+
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.8</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.5</version>
         </dependency>
     </dependencies>
     <name>PDF renderer, Atlassian patched</name>

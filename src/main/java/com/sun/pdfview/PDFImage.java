@@ -41,7 +41,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sun.pdfview.colorspace.AlternateColorSpace;
 import com.sun.pdfview.colorspace.IndexedColor;
@@ -53,7 +54,7 @@ import com.sun.pdfview.function.FunctionType0;
  */
 public class PDFImage {
 
-    private static final Logger log = Logger.getLogger(PDFImage.class);
+    private static final Logger log = LoggerFactory.getLogger(PDFImage.class);
 
     public static void dump(PDFObject obj) throws IOException {
         p("dumping PDF object: " + obj);

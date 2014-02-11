@@ -37,9 +37,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:svn:https://svn.atlassian.com/svn/public/atlassian/vendor/pdf-renderer/trunk</connection>
-        <developerConnection>scm:svn:https://svn.atlassian.com/svn/public/atlassian/vendor/pdf-renderer/trunk</developerConnection>
-        <url>https://svn.atlassian.com/svn/public/atlassian/vendor/pdf-renderer/trunk</url>
+        <connection>scm:git:ssh://git@bitbucket.org/tuedang/pdf-renderer.git</connection>
+        <developerConnection>scm:git:ssh://git@bitbucket.org/tuedang/pdf-renderer.git</developerConnection>
+        <url>https://bitbucket.org/tuedang/pdf-renderer</url>
     </scm> 
 
     <build>

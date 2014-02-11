@@ -7,7 +7,7 @@ public class DefaultICCProfile
 {
     public static ICC_Profile getDefaultIccProfile() throws IOException
     {
-        return ICC_Profile.getInstance(ICC_Profile.class.getResourceAsStream("/com/atlassian/pdfview/colorspace/Generic_CMYK_Profile.icc"));
+        return ICC_Profile.getInstance(DefaultICCProfile.class.getResourceAsStream("Generic_CMYK_Profile.icc"));
     }
 
 }

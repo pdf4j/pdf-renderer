@@ -82,6 +82,8 @@
                     <include>**/*.*icc</include>
                     <include>**/*.*properties</include>
                     <include>**/*.*pfb</include>
+                    <include>**/*.*txt</include>
+                    <include>**/CCITTCodes</include>
                 </includes>
             </resource>
         </resources>

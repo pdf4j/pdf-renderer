@@ -41,18 +41,18 @@ public class PdfImageLoader
         Rectangle rect = page.getBBox().getBounds();
 //        System.out.println(String.format("x=%s, w=%s, h=%s, h=%s", rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight()));
         Image img = page.getImage((int)(rect.width*scale), (int) (rect.height*scale), rect, null, true, true);
-//        return (BufferedImage)img;
-        BufferedImage bufferedImage = new BufferedImage((int)(rect.width*scale), (int) (rect.height*scale), BufferedImage.TYPE_INT_RGB);
-        Graphics g = bufferedImage.createGraphics();
-        g.drawImage(img, 0, 0, null);
-        g.dispose();
-        bufferedImage.flush();
-        return bufferedImage;
+        return (BufferedImage)img;
+//        BufferedImage bufferedImage = new BufferedImage((int)(rect.width*scale), (int) (rect.height*scale), BufferedImage.TYPE_INT_RGB);
+//        Graphics g = bufferedImage.createGraphics();
+//        g.drawImage(img, 0, 0, null);
+//        g.dispose();
+//        bufferedImage.flush();
+//        return bufferedImage;
     }
     
     public BufferedImage loadPage(int pageNumber)
     {
-        return loadPage(pageNumber, 1.0f);
+        return loadPage(pageNumber, 1.4f);
     }
     
     public int getNumberOfPages() 

@@ -23,7 +23,7 @@ import org.apache.commons.io.FileUtils;
 
 public class Main
 {
-    static final JTextField filesource = new JTextField("/Users/tue.dang/Downloads/pdfrenderer/CONF-19819/Balta IT - Wakkensteenweg 2 Sint-Baafs-Vijve.pdf");
+    static final JTextField filesource = new JTextField("/Users/tue.dang/Downloads/pdfrenderer/OFFCONN-33/charte-graphique-lampiris-2010-05.pdf");
     
     static JTextField pageNumber;
     
@@ -51,18 +51,22 @@ public class Main
         JPanel p = new JPanel();
         filesource.getDocument().addDocumentListener(new DocumentListener() {
             public void changedUpdate(DocumentEvent e) {
-              warn();
+              updateListFiles();
             }
             public void removeUpdate(DocumentEvent e) {
-              warn();
+              updateListFiles();
             }
             public void insertUpdate(DocumentEvent e) {
-              warn();
+              updateListFiles();
             }
 
-            public void warn() {
+            public void updateListFiles() {
                 String[] extFiles = {"pdf"};
-                Collection<File> pdfFiles = FileUtils.listFiles(new File(filesource.getText().trim()), extFiles, true);
+                File folder = new File(filesource.getText().trim());
+                if (!folder.isDirectory()) {
+                    return;
+                }
+                Collection<File> pdfFiles = FileUtils.listFiles(folder, extFiles, true);
                 listFile.removeAllItems();
                 for (File file : pdfFiles) {
                     listFile.addItem(file);
@@ -121,6 +125,9 @@ public class Main
             public void mousePressed(MouseEvent e) 
             {
                 int pnumber = getPageNumber();
+                if (pnumber >= pdfImageLoader.getNumberOfPages()) {
+                    return;
+                }
                 pnumber++;
                 pageNumber.setText(String.valueOf(pnumber));
 

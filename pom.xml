@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>pdf-renderer</groupId>
     <artifactId>pdf-renderer</artifactId>
-    <version>1.13-atlassian-6</version>
+    <version>1.13-atlassian-7-SNAPSHOT</version>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>

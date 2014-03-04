@@ -164,7 +164,7 @@ public class ToUnicodeMap extends PDFCMap {
 		if (charDef.endsWith(">")) {
 			charDef = charDef.substring(0, charDef.length()-1);
 		}
-		int result = Integer.decode("0x"+charDef);
+		long result = Long.decode("0x"+charDef);
 		return (char) result;
 	}
 

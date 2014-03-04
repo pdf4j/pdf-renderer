@@ -216,7 +216,7 @@ public class PDFParser extends BaseWatchable {
         }
         int c = stream[loc++];
         // examine the character:
-        while (c == '%') {
+        while (c == '%' || c == 28) {
             // skip comments
             StringBuffer comment = new StringBuffer();
             while (loc < stream.length && c != '\n') {

@@ -37,9 +37,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:ssh://git@bitbucket.org/tuedang/pdf-renderer.git</connection>
-        <developerConnection>scm:git:ssh://git@bitbucket.org/tuedang/pdf-renderer.git</developerConnection>
-        <url>https://bitbucket.org/tuedang/pdf-renderer</url>
+        <connection>scm:git:ssh://git@bitbucket.org/atlassian/pdf-renderer.git</connection>
+        <developerConnection>scm:git:ssh://git@bitbucket.org/atlassian/pdf-renderer.git</developerConnection>
+        <url>https://bitbucket.org/atlassian/pdf-renderer</url>
     </scm> 
 
     <build>
